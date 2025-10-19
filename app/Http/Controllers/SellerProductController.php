@@ -12,7 +12,6 @@ class SellerProductController extends Controller
 {
     public function getProductsBySeller(Request $request)
     {
-        // Logic cũ từ ProductController::getProductsBySeller
         $sellerId = $request->user()->id; 
         
         $productsList = Product::where('seller_id', $sellerId)
@@ -20,20 +19,19 @@ class SellerProductController extends Controller
                              ->get();
 
         if ($productsList->isEmpty()) {
-            return response()->json(['success' => 0, 'message' => 'No products found for this seller.'], 404);
+            return response()->json(['success' => 1, 'message' => 'No products found for this seller.', 'data' => []], 200);
         }
         
         return response()->json(['success' => 1, 'data' => $productsList]);
     }
 
-    public function addProduct(Request $request) // Đổi tên hàm store -> addProduct cho khớp routes
+    public function addProduct(Request $request)
     {
-        // Logic cũ từ ProductController::store
         $sellerId = $request->user()->id; 
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'category_id' => 'required|integer|exists:categories,id',
+            'category_id' => 'required|integer|exists:category,id',
             'price_per_kg' => 'required|numeric|min:0.01',
             'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', 
@@ -45,7 +43,6 @@ class SellerProductController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            // LƯU Ý: image_url trong Model Product có thể khác 'image' trong Migration
             $imagePath = $request->file('image')->store('product_images', 'public');
         }
 
@@ -55,7 +52,7 @@ class SellerProductController extends Controller
             'category_id' => $request->category_id,
             'price_per_kg' => $request->price_per_kg,
             'description' => $request->description,
-            'image_url' => $imagePath,
+            'image' => $imagePath, 
         ]);
 
         return response()->json([
@@ -65,26 +62,60 @@ class SellerProductController extends Controller
         ], 201);
     }
     
-    public function updateProduct(Request $request, $productId) // Đổi tên hàm update -> updateProduct
+    public function updateProduct(Request $request, $productId) 
     {
-        // Logic cũ từ ProductController::update
         $sellerId = $request->user()->id; 
         
-        // ... (Logic Validation) ...
-        
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'category_id' => 'sometimes|required|integer|exists:category,id',
+            'price_per_kg' => 'sometimes|required|numeric|min:0.01',
+            'description' => 'sometimes|required|string',
+            'image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
         $product = Product::where('id', $productId)->where('seller_id', $sellerId)->first();
-        // ... (Logic xử lý) ...
-        
-        return response()->json(['success' => 1, 'message' => 'Product successfully updated!'], 200);
+
+        if (!$product) {
+            return response()->json(['success' => 0, 'message' => 'Product not found or access denied.'], 403);
+        }
+
+        $dataToUpdate = $request->only(['name', 'category_id', 'price_per_kg', 'description']);
+
+        if ($request->hasFile('image')) {
+           
+            if ($product->image) { 
+                Storage::disk('public')->delete($product->image);
+            }
+            $imagePath = $request->file('image')->store('product_images', 'public');
+            $dataToUpdate['image'] = $imagePath; 
+        }
+
+        $product->update($dataToUpdate);
+
+        return response()->json(['success' => 1, 'message' => 'Product successfully updated!', 'product' => $product], 200);
     }
 
-    public function deleteProduct(Request $request, $productId) // Đổi tên hàm destroy -> deleteProduct
+    public function deleteProduct(Request $request, $productId) 
     {
-        // Logic cũ từ ProductController::destroy
         $sellerId = $request->user()->id; 
         
         $product = Product::where('id', $productId)->where('seller_id', $sellerId)->first();
-        // ... (Logic xử lý) ...
+
+        if (!$product) {
+            return response()->json(['success' => 0, 'message' => 'Product not found or access denied.'], 403);
+        }
+        
+        
+        if ($product->image) { 
+            Storage::disk('public')->delete($product->image); 
+        }
+
+        $product->delete();
 
         return response()->json(['success' => 1, 'message' => 'Product successfully deleted!'], 200);
     }

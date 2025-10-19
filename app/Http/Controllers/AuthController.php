@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
+
     public function unifiedLogin(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -27,9 +28,9 @@ class AuthController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            $token = $user->createToken('UserAuthToken', ['user'])->plainTextToken;
+            $token = $user->createToken('AuthToken', ['user'])->plainTextToken; // Đổi tên token thành chuỗi đơn giản
             
-            $userData = $user->makeHidden(['email_verified_at'])->toArray();
+            $userData = $user->makeHidden(['email_verified_at', 'password'])->toArray();
             $userData['user_type'] = 'user'; 
 
             return response()->json(['success' => 1, 'message' => 'Login successful', 'data' => $userData, 'token' => $token], 200);
@@ -38,9 +39,9 @@ class AuthController extends Controller
         $seller = Seller::where('email', $credentials['email'])->first();
 
         if ($seller && Hash::check($credentials['password'], $seller->password)) {
-            $token = $seller->createToken('SellerAuthToken', ['seller'])->plainTextToken;
+            $token = $seller->createToken('AuthToken', ['seller'])->plainTextToken; // Đổi tên token thành chuỗi đơn giản
             
-            $sellerData = $seller->makeHidden(['email_verified_at'])->toArray();
+            $sellerData = $seller->makeHidden(['email_verified_at', 'password'])->toArray();
             $sellerData['user_type'] = 'seller'; 
             
             return response()->json(['success' => 1, 'message' => 'Login successful', 'data' => $sellerData, 'token' => $token], 200);
@@ -53,8 +54,10 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:user,email',
+            // Sử dụng tên bảng 'users' tiêu chuẩn (hoặc tên bảng chính xác của bạn)
+            'email' => 'required|string|email|max:255|unique:users,email', 
             'password' => 'required|string|min:6',
+            'role' => 'required|string', 
         ]);
 
         if ($validator->fails()) {
@@ -70,10 +73,11 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => $request->password,
+                'password' => Hash::make($request->password), 
+                'role' => $request->role, 
             ]);
             
-            $token = $user->createToken('UserAuthToken', ['user'])->plainTextToken;
+            $token = $user->createToken('AuthToken', ['user'])->plainTextToken;
 
             return response()->json(['success' => 1, 'message' => 'User registered!', 'token' => $token], 201);
         } catch (\Exception $e) {
@@ -117,13 +121,13 @@ class AuthController extends Controller
             $seller = Seller::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => $request->password,
+                'password' => Hash::make($request->password), 
                 'address' => $request->address,
                 'description' => $request->description,
                 'image' => $imagePath,
             ]);
             
-            $token = $seller->createToken('SellerAuthToken', ['seller'])->plainTextToken;
+            $token = $seller->createToken('AuthToken', ['seller'])->plainTextToken;
 
             return response()->json(['success' => 1, 'message' => 'Seller registered!', 'token' => $token], 201);
         } catch (\Exception $e) {

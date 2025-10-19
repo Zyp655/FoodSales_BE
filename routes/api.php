@@ -9,8 +9,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UtilityController;
-use App\Http\Controllers\SellerController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SellerProductController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -56,19 +56,17 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     Route::prefix('seller/product')->group(function () {
-        Route::post('add', [ProductController::class, 'addProduct']); 
-        Route::get('/', [ProductController::class, 'getSellerProducts']); 
-        Route::put('{id}', [ProductController::class, 'updateProduct']); 
-        Route::delete('{id}', [ProductController::class, 'deleteProduct']); 
+        Route::post('add', [SellerProductController::class, 'addProduct']); 
+        Route::get('/', [SellerProductController::class, 'getSellerProducts']); 
+        Route::put('{id}', [SellerProductController::class, 'updateProduct']); 
+        Route::delete('{id}', [SellerProductController::class, 'deleteProduct']); 
     });
     
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('sellers', [AdminController::class, 'listAllSellers']);
         Route::put('sellers/{id}/status', [AdminController::class, 'updateSellerStatus']);
-
         Route::get('users', [AdminController::class, 'listAllUsers']);
         Route::put('users/{id}/role', [AdminController::class, 'updateUserRole']);
-
         Route::get('products', [AdminController::class, 'listAllProducts']);
         Route::delete('products/{id}', [AdminController::class, 'destroyProduct']);
     });

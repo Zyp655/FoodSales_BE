@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-
+    
     protected $table = 'product'; 
-
+    public $timestamps = false;
     protected $fillable = [
         'seller_id',
         'name',
@@ -25,7 +25,6 @@ class Product extends Model
         'interaction_count' => 0,
     ];
 
-    // Mối quan hệ: Sản phẩm thuộc về một Seller
     public function seller()
     {
         return $this->belongsTo(Seller::class);
@@ -36,7 +35,6 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
     
-    // Scope tìm kiếm sản phẩm
     public function scopeSearch($query, $searchQuery)
     {
         return $query->where('name', 'LIKE', '%' . $searchQuery . '%')

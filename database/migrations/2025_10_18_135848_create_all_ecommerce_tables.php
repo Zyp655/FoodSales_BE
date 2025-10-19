@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -15,7 +14,7 @@ return new class extends Migration
             $table->string('email', 100)->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('user'); // Thêm cột Role
+            $table->string('role')->default('user'); 
             $table->rememberToken();
             $table->timestamps();
         });
@@ -88,12 +87,23 @@ return new class extends Migration
             $table->text('qr_data')->nullable(); 
             $table->timestamps();
         });
+        
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            
+            $table->string('name')->nullable(); 
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
     }
 
-    
     public function down(): void
     {
-        // Xóa theo thứ tự ngược lại để tránh lỗi khóa ngoại
+        Schema::dropIfExists('personal_access_tokens'); 
         Schema::dropIfExists('transaction');
         Schema::dropIfExists('order_item');
         Schema::dropIfExists('order');
@@ -101,6 +111,7 @@ return new class extends Migration
         Schema::dropIfExists('product');
         Schema::dropIfExists('sellers');
         Schema::dropIfExists('category');
-        Schema::dropIfExists('users'); // Thêm users vào cuối danh sách xóa
+        Schema::dropIfExists('users'); 
+        Schema::dropIfExists('migrations'); 
     }
 };
