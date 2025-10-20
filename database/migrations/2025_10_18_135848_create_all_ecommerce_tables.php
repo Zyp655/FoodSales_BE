@@ -50,12 +50,16 @@ return new class extends Migration
             $table->timestamps();
         });
 
+       
         Schema::create('cart', function (Blueprint $table) {
+            $table->id(); 
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('product')->onDelete('cascade');
             $table->integer('quantity')->default(1);
             $table->timestamps();
-            $table->primary(['user_id', 'product_id']);
+            
+           
+            $table->unique(['user_id', 'product_id']); 
         });
 
         Schema::create('order', function (Blueprint $table) {
@@ -112,6 +116,5 @@ return new class extends Migration
         Schema::dropIfExists('sellers');
         Schema::dropIfExists('category');
         Schema::dropIfExists('users'); 
-        Schema::dropIfExists('migrations'); 
     }
 };

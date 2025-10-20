@@ -15,7 +15,6 @@ class SellerProductController extends Controller
         $sellerId = $request->user()->id; 
         
         $productsList = Product::where('seller_id', $sellerId)
-                             ->orderBy('created_at', 'desc')
                              ->get();
 
         if ($productsList->isEmpty()) {

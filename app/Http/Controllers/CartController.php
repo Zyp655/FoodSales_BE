@@ -68,39 +68,38 @@ class CartController extends Controller
         ], 200);
     }
     
-    public function updateCartItem(Request $request, $productId)
-    {
-        $userId = $request->user()->id; 
-        
-        $validator = Validator::make(array_merge($request->all(), ['product_id' => $productId]), [
-            'product_id' => 'required|integer|exists:product,id',
-            'quantity' => 'required|numeric|min:0',
-        ]);
+   public function updateCartItem(Request $request, $cartItemId) 
+{
+    $userId = $request->user()->id; 
+    
+    $validator = Validator::make($request->all(), [
+        'quantity' => 'required|numeric|min:0',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => 0, 'message' => 'Validation error.', 'errors' => $validator->errors()], 422);
-        }
-        
-        $quantity = $request->quantity;
-        
-        $cartItem = Cart::where('user_id', $userId)
-            ->where('product_id', $productId)
-            ->first();
-            
-        if (!$cartItem) {
-            return response()->json(['success' => 0, 'message' => 'Item not found in cart.'], 404);
-        }
-
-        if ($quantity == 0) {
-            $cartItem->delete();
-            return response()->json(['success' => 1, 'message' => 'Item removed from cart successfully.']);
-            
-        } else {
-            $cartItem->quantity = $quantity;
-            $cartItem->save();
-            return response()->json(['success' => 1, 'message' => 'Cart quantity updated successfully.']);
-        }
+    if ($validator->fails()) {
+        return response()->json(['success' => 0, 'message' => 'Validation error.', 'errors' => $validator->errors()], 422);
     }
+    
+    $quantity = $request->quantity;
+    
+    $cartItem = Cart::where('id', $cartItemId)
+        ->where('user_id', $userId)
+        ->first();
+        
+    if (!$cartItem) {
+        return response()->json(['success' => 0, 'message' => 'Item not found in cart or access denied.'], 404);
+    }
+
+    if ($quantity == 0) {
+        $cartItem->delete();
+        return response()->json(['success' => 1, 'message' => 'Item removed from cart successfully.']);
+        
+    } else {
+        $cartItem->quantity = $quantity;
+        $cartItem->save(); 
+        return response()->json(['success' => 1, 'message' => 'Cart quantity updated successfully.']);
+    }
+}
     
     public function clearCart(Request $request)
     {
