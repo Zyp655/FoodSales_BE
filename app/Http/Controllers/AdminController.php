@@ -40,7 +40,7 @@ class AdminController extends Controller
     public function listAllUsers()
     {
         $users = User::select('id', 'name', 'email', 'role', 'created_at')
-                     ->whereIn('role', ['user', 'delivery', 'banned']) 
+                     ->whereIn('role', ['user', 'delivery']) 
                      ->orderBy('created_at', 'desc')
                      ->paginate(20);
 
