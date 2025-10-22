@@ -11,7 +11,9 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SellerProductController;
-
+use App\Http\Controllers\DeliveryController;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\DeliveryMiddleware;
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
     Route::post('register/user', [AuthController::class, 'registerUser']);
@@ -46,7 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('order')->group(function () {
         Route::post('create', [OrderController::class, 'createOrder']); 
-        Route::get('user', [OrderController::class, 'getUserOrders']); 
+        Route::get('user', [OrderController::class, 'getOrdersByUser']); 
         Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']);
     });
     
@@ -62,12 +64,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('{id}', [SellerProductController::class, 'deleteProduct']); 
     });
     
-    Route::middleware('admin')->prefix('admin')->group(function () {
+    Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
         Route::get('sellers', [AdminController::class, 'listAllSellers']);
         Route::put('sellers/{id}/status', [AdminController::class, 'updateSellerStatus']);
         Route::get('users', [AdminController::class, 'listAllUsers']);
         Route::put('users/{id}/role', [AdminController::class, 'updateUserRole']);
         Route::get('products', [AdminController::class, 'listAllProducts']);
         Route::delete('products/{id}', [AdminController::class, 'destroyProduct']);
+        
+        Route::put('orders/{id}/assign-driver', [AdminController::class, 'assignDriver']);
+    });
+    
+    Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {
+        Route::get('orders', [DeliveryController::class, 'getAssignedOrders']);
+        
+        Route::put('orders/{id}/status', [DeliveryController::class, 'updateDeliveryStatus']);
     });
 });

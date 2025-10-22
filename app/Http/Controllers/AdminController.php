@@ -5,8 +5,10 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Seller;
 use App\Models\Product;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
@@ -14,9 +16,9 @@ class AdminController extends Controller
     public function listAllSellers()
     {
         $sellers = Seller::select('id', 'name', 'email', 'address', 'description', 'created_at')
-                         ->orderBy('created_at', 'desc')
-                         ->paginate(20);
-                         
+                            ->orderBy('created_at', 'desc')
+                            ->paginate(20);
+                            
         return response()->json(['success' => 1, 'data' => $sellers], 200);
     }
     
@@ -34,12 +36,11 @@ class AdminController extends Controller
         }
     }
     
-
     
     public function listAllUsers()
     {
         $users = User::select('id', 'name', 'email', 'role', 'created_at')
-                     ->where('role', 'user') 
+                     ->whereIn('role', ['user', 'delivery', 'banned']) 
                      ->orderBy('created_at', 'desc')
                      ->paginate(20);
 
@@ -48,7 +49,7 @@ class AdminController extends Controller
     
     public function updateUserRole(Request $request, $userId)
     {
-        $request->validate(['role' => 'required|in:user,banned']);
+        $request->validate(['role' => 'required|in:user,banned,delivery']); 
         
         try {
             $user = User::findOrFail($userId);
@@ -82,7 +83,6 @@ class AdminController extends Controller
     {
         try {
             $product = Product::findOrFail($productId);
-            // Xóa file ảnh trước khi xóa bản ghi (Tốt nhất)
             if ($product->image_url) {
                  Storage::disk('public')->delete($product->image_url);
             }
@@ -91,6 +91,39 @@ class AdminController extends Controller
             return response()->json(['success' => 1, 'message' => 'Product permanently deleted by Admin.'], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['success' => 0, 'message' => 'Product not found.'], 404);
+        }
+    }
+
+    public function assignDriver(Request $request, $orderId)
+    {
+        $validator = Validator::make($request->all(), [
+            'delivery_person_id' => 'required|integer|exists:users,id', 
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $order = Order::findOrFail($orderId);
+
+            $driver = User::findOrFail($request->delivery_person_id);
+            if (!$driver->isDeliveryPerson()) {
+                return response()->json(['success' => 0, 'message' => 'The assigned user is not designated as a delivery person.'], 403);
+            }
+
+            $order->delivery_person_id = $request->delivery_person_id;
+            $order->status = 'Assigned'; 
+            $order->save();
+
+            return response()->json([
+                'success' => 1,
+                'message' => "Driver {$driver->name} successfully assigned to Order #{$orderId}. Status updated to Assigned.",
+                'order_id' => $order->id,
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['success' => 0, 'message' => 'Order or Driver not found.'], 404);
         }
     }
 }

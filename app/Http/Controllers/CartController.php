@@ -56,11 +56,27 @@ class CartController extends Controller
         $productId = $request->product_id;
         $quantity = $request->quantity;
 
-        $cartItem = Cart::updateOrCreate(
-            ['user_id' => $userId, 'product_id' => $productId], 
-            ['quantity' => DB::raw('quantity + ' . $quantity)] 
-        );
         
+        $conditions = ['user_id' => $userId, 'product_id' => $productId];
+
+        $exists = Cart::where($conditions)->exists();
+
+        if ($exists) {
+            Cart::where($conditions)->update([
+                'quantity' => DB::raw('quantity + ' . $quantity),
+                'updated_at' => now(),
+            ]);
+            
+            $cartItem = Cart::where($conditions)->first();
+            
+        } else {
+            $cartItem = Cart::create(array_merge($conditions, [
+                'quantity' => $quantity,
+            ]));
+        }
+        
+    
+
         return response()->json([
             'success' => 1, 
             'message' => 'Product added to cart or quantity updated successfully.',

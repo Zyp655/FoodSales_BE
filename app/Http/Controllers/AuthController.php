@@ -28,10 +28,10 @@ class AuthController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            $token = $user->createToken('AuthToken', ['user'])->plainTextToken; // Đổi tên token thành chuỗi đơn giản
+            $token = $user->createToken('AuthToken', ['user'])->plainTextToken;
             
             $userData = $user->makeHidden(['email_verified_at', 'password'])->toArray();
-            $userData['user_type'] = 'user'; 
+            $userData['user_type'] = $user -> role; 
 
             return response()->json(['success' => 1, 'message' => 'Login successful', 'data' => $userData, 'token' => $token], 200);
         } 
@@ -39,7 +39,7 @@ class AuthController extends Controller
         $seller = Seller::where('email', $credentials['email'])->first();
 
         if ($seller && Hash::check($credentials['password'], $seller->password)) {
-            $token = $seller->createToken('AuthToken', ['seller'])->plainTextToken; // Đổi tên token thành chuỗi đơn giản
+            $token = $seller->createToken('AuthToken', ['seller'])->plainTextToken; 
             
             $sellerData = $seller->makeHidden(['email_verified_at', 'password'])->toArray();
             $sellerData['user_type'] = 'seller'; 
@@ -54,10 +54,8 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            // Sử dụng tên bảng 'users' tiêu chuẩn (hoặc tên bảng chính xác của bạn)
             'email' => 'required|string|email|max:255|unique:users,email', 
             'password' => 'required|string|min:6',
-            'role' => 'required|string', 
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +72,7 @@ class AuthController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password), 
-                'role' => $request->role, 
+                'role' => 'user', 
             ]);
             
             $token = $user->createToken('AuthToken', ['user'])->plainTextToken;
@@ -133,5 +131,11 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => 0, 'message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['success' => 1, 'message' => 'Successfully logged out'], 200);
     }
 }

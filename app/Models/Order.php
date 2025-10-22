@@ -14,6 +14,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'seller_id',
+        'delivery_person_id',
         'total_amount',
         'status', 
         'delivery_address',
@@ -24,6 +25,11 @@ class Order extends Model
         return $this->belongsTo(User::class); 
     }
 
+    public function deliveryPerson()
+    {
+        return $this->belongsTo(User::class, 'delivery_person_id');
+    }
+    
     public function seller()
     {
         return $this->belongsTo(Seller::class);
