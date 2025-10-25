@@ -80,4 +80,5 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::put('orders/{id}/status', [DeliveryController::class, 'updateDeliveryStatus']);
     });
+    
 });
