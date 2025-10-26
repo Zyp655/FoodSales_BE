@@ -19,6 +19,7 @@ class Seller extends Authenticatable
         'image',
         'address',
         'description',
+        'role',
     ];
     
     protected $hidden = [

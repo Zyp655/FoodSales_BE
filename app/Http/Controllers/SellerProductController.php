@@ -7,9 +7,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
+use App\Models\Seller;
 class SellerProductController extends Controller
-{
+{  
+    public function listSellers(Request $request)
+    {
+        $sellers = Seller::select('id', 'name', 'image', 'address', 'description')
+                         ->get();
+
+        if ($sellers->isEmpty()) {
+            return response()->json(['success' => 1, 'message' => 'No sellers found.', 'sellers' => []], 200);
+        }
+
+        return response()->json(['success' => 1, 'sellers' => $sellers]); 
+    } 
     public function getProductsBySeller(Request $request)
     {
         $sellerId = $request->user()->id; 
@@ -33,7 +44,7 @@ class SellerProductController extends Controller
             'category_id' => 'required|integer|exists:category,id',
             'price_per_kg' => 'required|numeric|min:0.01',
             'description' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
         ]);
 
         if ($validator->fails()) {

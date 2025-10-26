@@ -81,20 +81,22 @@ class OrderController extends Controller
     }
     
     public function getOrdersByUser(Request $request)
-    {
-        $userId = $request->user()->id; 
+{
+    $userId = $request->user()->id;
 
-        $ordersList = Order::where('user_id', $userId)
-                         ->with('seller:id,name')
-                         ->orderBy('created_at', 'desc')
-                         ->get();
+    $ordersList = Order::where('user_id', $userId)
+                          ->with([
+                              'seller:id,name',
+                              'deliveryPerson:id,name,email,role' 
+                          ])
+                          ->orderBy('created_at', 'desc')
+                          ->get();
 
-        if ($ordersList->isEmpty()) {
-            return response()->json(['success' => 1, 'message' => 'No orders found for this user.', 'data' => []]);
-        }
-        
-        return response()->json(['success' => 1, 'data' => $ordersList]);
+    if ($ordersList->isEmpty()) {
+        return response()->json(['success' => 1, 'message' => 'No orders found for this user.', 'orders' => []]);
     }
+    return response()->json(['success' => 1, 'orders' => $ordersList]);
+}
     
     public function updateOrderStatus(Request $request, $orderId)
     {

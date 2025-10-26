@@ -20,6 +20,13 @@ class Order extends Model
         'delivery_address',
     ];
     
+    protected $casts = [
+        'user_id' => 'integer',
+        'seller_id' => 'integer',
+        'delivery_person_id' => 'integer',
+        'total_amount' => 'float', 
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class); 

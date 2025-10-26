@@ -14,6 +14,8 @@ use App\Http\Controllers\SellerProductController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
+use App\Http\Controllers\SellerOrderController;
+
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
     Route::post('register/user', [AuthController::class, 'registerUser']);
@@ -22,9 +24,10 @@ Route::prefix('auth')->group(function () {
 
 Route::prefix('gen')->group(function () {
     Route::get('products/search', [ProductController::class, 'searchProducts']); 
-    Route::get('sellers', [ProductController::class, 'listSellers']); 
+    Route::get('sellers', [SellerProductController::class, 'listSellers']); 
     Route::get('distance', [UtilityController::class, 'getDistance']);
     Route::post('interaction/increment', [UtilityController::class, 'incrementInteraction']);
+    Route::get('categories', [ProductController::class, 'listCategories']);
 });
 
 Route::prefix('product')->group(function () {
@@ -35,6 +38,8 @@ Route::prefix('product')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    Route::put('/user/address', [AuthController::class, 'updateAddress']);
 
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -63,6 +68,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('{id}', [SellerProductController::class, 'updateProduct']); 
         Route::delete('{id}', [SellerProductController::class, 'deleteProduct']); 
     });
+
+    Route::prefix('seller/orders')->group(function () {
+        Route::get('/', [SellerOrderController::class, 'index']); 
+        Route::put('{id}/status', [SellerOrderController::class, 'updateStatus']); 
+    });
     
     Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
         Route::get('sellers', [AdminController::class, 'listAllSellers']);
@@ -80,5 +90,4 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::put('orders/{id}/status', [DeliveryController::class, 'updateDeliveryStatus']);
     });
-    
 });
