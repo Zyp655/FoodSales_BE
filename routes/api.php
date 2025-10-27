@@ -23,6 +23,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::prefix('gen')->group(function () {
+    Route::get('search', [ProductController::class, 'combinedSearch']);
     Route::get('products/search', [ProductController::class, 'searchProducts']);
     Route::get('sellers', [SellerProductController::class, 'listSellers']);
     Route::get('distance', [UtilityController::class, 'getDistance']);

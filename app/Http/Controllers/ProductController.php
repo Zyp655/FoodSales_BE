@@ -67,6 +67,34 @@ class ProductController extends Controller
         return response()->json(['success' => 1, 'categories' => $categories]);
     }
 
+    public function combinedSearch(Request $request)
+    {
+        $query = $request->input('q');
+
+        if (!$query) {
+          
+            return response()->json(['success' => 1, 'results' => ['products' => [], 'sellers' => []]]);
+        }
+
+       
+        $products = Product::with('seller:id,name,image,address')
+                           ->where('name', 'LIKE', "%{$query}%")
+                           ->limit(10) 
+                           ->get();
+
+        $sellers = Seller::select('id', 'name', 'image', 'address', 'description') 
+                         ->where('name', 'LIKE', "%{$query}%")
+                         ->limit(5) 
+                         ->get();
+
+        return response()->json([
+            'success' => 1,
+            'results' => [
+                'products' => $products,
+                'sellers' => $sellers,
+            ]
+        ]);
+    }
    
 
 }
