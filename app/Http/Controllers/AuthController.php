@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-
     public function unifiedLogin(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -63,7 +63,8 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', Password::min(6)],
+            'address' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -81,6 +82,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'user',
+                'address' => $request->address,
             ]);
 
             return response()->json(['success' => 1, 'message' => 'User registered!', 'user' => $user->makeHidden(['password'])], 201);
@@ -94,7 +96,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:sellers,email',
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', Password::min(6)],
             'address' => 'required|string|max:255',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -143,44 +145,100 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json(['success' => 1, 'message' => 'Successfully logged out'], 200);
     }
+
     public function updateAddress(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'address' => 'required|string|max:255',
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'address' => 'required|string|max:255',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
-    }
-
-    $user = Auth::user(); 
-
-    if (!$user) {
-         return response()->json(['success' => 0, 'message' => 'User not authenticated.'], 401);
-    }
-
-    try {
-        if ($user instanceof User) {
-             $user->address = $request->address;
-             $user->save();
-        } elseif ($user instanceof Seller) {
-             $user->address = $request->address;
-             $user->save();
-        } else {
-             return response()->json(['success' => 0, 'message' => 'Invalid user type.'], 400);
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
+        $user = Auth::user();
 
-        $userData = $user->toArray();
-        if ($user instanceof Seller) {
-             $userData['role'] = 'seller'; 
+        if (!$user) {
+            return response()->json(['success' => 0, 'message' => 'User not authenticated.'], 401);
         }
 
+        try {
+            $user->address = $request->address;
+            $user->save();
 
-        return response()->json(['success' => 1, 'message' => 'Address updated successfully.', 'user' => $userData], 200);
+            $userData = $user->toArray();
+            if ($user instanceof Seller) {
+                $userData['role'] = 'seller';
+            }
 
-    } catch (\Exception $e) {
-        return response()->json(['success' => 0, 'message' => 'Failed to update address.', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => 1, 'message' => 'Address updated successfully.', 'user' => $userData], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Failed to update address.', 'error' => $e->getMessage()], 500);
+        }
     }
-}
+
+    public function updateContact(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'nullable|numeric|digits:10',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['success' => 0, 'message' => 'User not authenticated.'], 401);
+        }
+
+        try {
+            $user->phone = $request->phone;
+            $user->save();
+
+            $userData = $user->toArray();
+            if ($user instanceof Seller) {
+                $userData['role'] = 'seller';
+            }
+
+            return response()->json(['success' => 1, 'message' => 'Contact info updated successfully.', 'user' => $userData], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Failed to update contact info.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'new_password' => ['required', 'string', Password::min(6), 'confirmed'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['success' => 0, 'message' => 'User not authenticated.'], 401);
+        }
+
+        if (!Hash::check($request->current_password, $user->password)) {
+             return response()->json(['success' => 0, 'message' => 'Current password does not match.'], 401);
+        }
+
+        try {
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            return response()->json(['success' => 1, 'message' => 'Password changed successfully.'], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Failed to change password.', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

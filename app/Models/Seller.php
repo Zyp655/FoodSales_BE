@@ -20,6 +20,7 @@ class Seller extends Authenticatable
         'address',
         'description',
         'role',
+        'phone',
     ];
     
     protected $hidden = [
