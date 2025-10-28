@@ -44,6 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    Route::post('/seller/info', [AuthController::class, 'updateSellerInfo']);
+
     Route::put('/user/address', [AuthController::class, 'updateAddress']);
     Route::put('/user/contact', [AuthController::class, 'updateContact']); 
     Route::post('/user/password', [AuthController::class, 'changePassword']); 

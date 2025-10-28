@@ -241,4 +241,52 @@ class AuthController extends Controller
             return response()->json(['success' => 0, 'message' => 'Failed to change password.', 'error' => $e->getMessage()], 500);
         }
     }
+    public function updateSellerInfo(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user || !$user instanceof Seller) {
+             return response()->json(['success' => 0, 'message' => 'Not authenticated as a seller.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:sellers,email,' . $user->id,
+            'phone' => 'nullable|numeric|digits:10',
+            'address' => 'required|string|max:255',
+            'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $dataToUpdate = $request->only(['name', 'email', 'phone', 'address', 'description']);
+
+            if ($request->hasFile('image')) {
+                if ($user->image && Storage::disk('public')->exists($user->image)) {
+                    Storage::disk('public')->delete($user->image);
+                }
+                $file = $request->file('image');
+                $extension = $file->getClientOriginalExtension();
+                $newFileName = str_replace(['@', '.'], '_', $request->email) . "_profile" . "." . $extension;
+                $path = $file->storeAs('seller_images', $newFileName, 'public');
+                $dataToUpdate['image'] = $path; 
+            }
+
+            $user->update($dataToUpdate);
+
+            $user->refresh();
+
+            $userData = $user->toArray();
+            $userData['role'] = 'seller'; 
+
+            return response()->json(['success' => 1, 'message' => 'Seller info updated successfully.', 'user' => $userData], 200);
+
+        } catch (\Exception $e) {
+             return response()->json(['success' => 0, 'message' => 'Failed to update seller info.', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

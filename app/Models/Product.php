@@ -25,6 +25,14 @@ class Product extends Model
         'interaction_count' => 0,
     ];
 
+   
+    protected $casts = [
+        'seller_id' => 'integer',
+        'category_id' => 'integer',
+        'price_per_kg' => 'float', 
+        'interaction_count' => 'integer',
+    ];
+
     public function seller()
     {
         return $this->belongsTo(Seller::class);
