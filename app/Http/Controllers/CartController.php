@@ -6,7 +6,7 @@ use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB; 
-
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 class CartController extends Controller
 {
     public function getCart(Request $request)
@@ -124,5 +124,25 @@ class CartController extends Controller
         $deleted = Cart::where('user_id', $userId)->delete();
         
         return response()->json(['success' => 1, 'message' => "Successfully cleared {$deleted} items from cart."]);
+    }
+
+    public function removeFromCart(Request $request, $cartitemId)
+    {
+        $userId = $request->user()->id;
+
+        try {
+            $cartItem = Cart::where('id', $cartitemId)
+                            ->where('user_id', $userId)
+                            ->firstOrFail(); 
+
+            $cartItem->delete(); 
+
+            return response()->json(['success' => 1, 'message' => 'Item removed from cart.'], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['success' => 0, 'message' => 'Cart item not found or access denied.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Failed to remove item.', 'error' => $e->getMessage()], 500);
+        }
     }
 }

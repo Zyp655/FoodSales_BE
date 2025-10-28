@@ -13,7 +13,12 @@ class SellerOrderController extends Controller
         $sellerId = Auth::id();
 
         $ordersList = Order::where('seller_id', $sellerId)
-                            ->with(['user:id,name', 'deliveryPerson:id,name'])
+                            ->with([
+                                'user:id,name', 
+                                'deliveryPerson:id,name',
+                                'items',
+                                'items.product' 
+                            ])
                             ->orderBy('created_at', 'desc')
                             ->get(); 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
