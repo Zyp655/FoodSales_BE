@@ -14,6 +14,7 @@ use App\Http\Controllers\SellerProductController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
+use App\Http\Controllers\DeliveryTicketController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -38,7 +39,7 @@ Route::prefix('product')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
-
+    Route::post('/user/request-delivery', [DeliveryTicketController::class, 'createTicket']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -61,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('create', [OrderController::class, 'createOrder']);
         Route::get('user', action: [OrderController::class, 'getOrdersByUser']);
         Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']); 
+        Route::get('detail/{id}', [OrderController::class, 'getOrderDetails']);
     });
 
     Route::prefix('transaction')->group(function () {

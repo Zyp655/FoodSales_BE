@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 class OrderController extends Controller
 {
     public function createOrder(Request $request)
@@ -225,4 +225,28 @@ class OrderController extends Controller
 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
     }
-}
+
+    public function getOrderDetails(Request $request, $orderId)
+    {
+        $userId = $request->user()->id;
+
+        try {
+            $order = Order::where('id', $orderId)
+                          ->where('user_id', $userId) 
+                          ->with([ 
+                              'seller:id,name,image,address,phone',
+                              'deliveryPerson:id,name,phone',
+                              'items',
+                              'items.product'
+                          ])
+                          ->firstOrFail(); 
+
+            return response()->json(['success' => 1, 'order' => $order], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['success' => 0, 'message' => 'Order not found or access denied.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Server error.', 'error' => $e->getMessage()], 500);
+        }
+    }
+} 
