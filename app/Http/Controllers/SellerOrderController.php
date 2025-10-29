@@ -13,21 +13,21 @@ class SellerOrderController extends Controller
         $sellerId = Auth::id();
 
         $ordersList = Order::where('seller_id', $sellerId)
-                            ->with([
-                                'user:id,name', 
-                                'deliveryPerson:id,name',
-                                'items',
-                                'items.product' 
-                            ])
-                            ->orderBy('created_at', 'desc')
-                            ->get(); 
+                             ->with([
+                                 'user:id,name', 
+                                 'deliveryPerson:id,name',
+                                 'items',
+                                 'items.product' 
+                             ])
+                             ->orderBy('created_at', 'desc')
+                             ->get(); 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
     }
 
     public function updateStatus(Request $request, $orderId)
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|string|in:preparing,ready_for_pickup',
+            'status' => 'required|string|in:Processing,ReadyForPickup', 
         ]);
 
         if ($validator->fails()) {

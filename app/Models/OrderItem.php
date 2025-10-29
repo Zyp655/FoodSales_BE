@@ -26,7 +26,7 @@ class OrderItem extends Model
    
     protected $casts = [
         'quantity' => 'integer',
-        'price_at_purchase' => 'decimal:2',
+        'price_at_purchase' => 'float',
     ];
 
     

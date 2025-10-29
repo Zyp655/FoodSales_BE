@@ -54,7 +54,7 @@ class OrderController extends Controller
                 'seller_id' => $request->seller_id,
                 'total_amount' => $request->total_amount,
                 'delivery_address' => $request->delivery_address,
-                'status' => 'Pending',
+                'status' => Order::STATUS_PENDING, 
             ]);
             
             $orderItemsData = [];
@@ -81,8 +81,8 @@ class OrderController extends Controller
             }
 
             if (empty($orderItemsData)) {
-                 DB::rollBack();
-                 return response()->json(['success' => 0, 'message' => 'Failed to process any cart item. Products may have been removed or are missing price_per_kg.', 'debug' => $cartItems->pluck('id')], 500);
+                    DB::rollBack();
+                    return response()->json(['success' => 0, 'message' => 'Failed to process any cart item. Products may have been removed or are missing price_per_kg.', 'debug' => $cartItems->pluck('id')], 500);
             }
 
             OrderItem::insert($orderItemsData);
@@ -110,14 +110,14 @@ class OrderController extends Controller
         $userId = $request->user()->id; 
 
         $ordersList = Order::where('user_id', $userId)
-                         ->with([
-                             'seller:id,name',
-                             'deliveryPerson:id,name,email,role',
-                             'items', 
-                             'items.product' 
-                           ])
-                         ->orderBy('created_at', 'desc')
-                         ->get();
+                             ->with([
+                                'seller:id,name',
+                                'deliveryPerson:id,name,email,role',
+                                'items', 
+                                'items.product' 
+                                 ])
+                             ->orderBy('created_at', 'desc')
+                             ->get();
 
         if ($ordersList->isEmpty()) {
             return response()->json(['success' => 1, 'message' => 'No orders found for this user.', 'orders' => []]);
@@ -128,8 +128,16 @@ class OrderController extends Controller
     
     public function updateOrderStatus(Request $request, $orderId)
     {
+        $validStatuses = [
+            Order::STATUS_PENDING, 
+            Order::STATUS_PROCESSING, 
+            Order::STATUS_IN_TRANSIT, 
+            Order::STATUS_DELIVERED, 
+            Order::STATUS_CANCELLED
+        ];
+        
         $validator = Validator::make($request->all(), [
-            'status' => 'required|string|in:Pending,Processing,Shipping,Delivered,Cancelled',
+            'status' => 'required|string|in:' . implode(',', $validStatuses),
         ]);
 
         if ($validator->fails()) {
@@ -159,8 +167,13 @@ class OrderController extends Controller
     
     public function updateSellerOrderStatus(Request $request, $orderId)
     {
+        $sellerAllowedStatuses = [
+            Order::STATUS_PROCESSING, 
+            Order::STATUS_READY_FOR_PICKUP
+        ];
+        
         $validator = Validator::make($request->all(), [
-            'status' => 'required|string|in:preparing,ready_for_pickup',
+            'status' => 'required|string|in:' . implode(',', $sellerAllowedStatuses),
         ]);
 
         if ($validator->fails()) {
@@ -168,6 +181,8 @@ class OrderController extends Controller
         }
 
         $sellerId = Auth::id();
+        $newStatus = $request->status;
+        
         $order = Order::where('id', $orderId)
                       ->where('seller_id', $sellerId)
                       ->first();
@@ -175,10 +190,13 @@ class OrderController extends Controller
         if (!$order) {
             return response()->json(['success' => 0, 'message' => 'Order not found or access denied.'], 404);
         }
-
+        
         $oldStatus = $order->status;
-        $newStatus = $request->status;
-
+        
+        if (!in_array($oldStatus, [Order::STATUS_PENDING, Order::STATUS_PROCESSING])) {
+             return response()->json(['success' => 0, 'message' => "Cannot update status from {$oldStatus}. Order must be Pending or Processing to mark it as Ready."], 400);
+        }
+        
         $order->status = $newStatus;
         $order->save();
 
@@ -196,14 +214,14 @@ class OrderController extends Controller
         $sellerId = Auth::id();
 
         $ordersList = Order::where('seller_id', $sellerId)
-                            ->with([
+                             ->with([
                                 'user:id,name', 
                                 'deliveryPerson:id,name',
                                 'items',
                                 'items.product'
-                            ])
-                            ->orderBy('created_at', 'desc')
-                            ->get();
+                             ])
+                             ->orderBy('created_at', 'desc')
+                             ->get();
 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
     }

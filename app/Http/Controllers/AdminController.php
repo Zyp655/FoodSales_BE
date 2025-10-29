@@ -64,6 +64,16 @@ class AdminController extends Controller
             return response()->json(['success' => 0, 'message' => 'User not found.'], 404);
         }
     }
+
+    public function listAllOrders(Request $request)
+    {
+        $orders = Order::with(['user:id,name', 'seller:id,name', 'deliveryPerson:id,name'])
+                       ->orderByRaw("CASE WHEN status = 'ready_for_pickup' THEN 1 WHEN status = 'Assigned' THEN 2 WHEN status = 'Pending' THEN 3 ELSE 4 END")
+                       ->orderBy('created_at', 'desc')
+                       ->paginate(20); 
+
+        return response()->json(['success' => 1, 'orders' => $orders], 200);
+    }
     
     
     public function listAllProducts(Request $request)

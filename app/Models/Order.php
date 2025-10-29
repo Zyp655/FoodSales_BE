@@ -8,6 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     use HasFactory;
+    
+
+    const STATUS_PENDING = 'Pending'; 
+    const STATUS_PROCESSING = 'Processing'; 
+    const STATUS_READY_FOR_PICKUP = 'ReadyForPickup'; 
+    const STATUS_PICKING_UP = 'Picking Up';     
+    const STATUS_IN_TRANSIT = 'In Transit'; 
+    const STATUS_DELIVERED = 'Delivered'; 
+    const STATUS_CANCELLED = 'Cancelled'; 
+    
+  
+    const ALL_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PROCESSING,
+        self::STATUS_READY_FOR_PICKUP,
+        self::STATUS_PICKING_UP,
+        self::STATUS_IN_TRANSIT,
+        self::STATUS_DELIVERED,
+        self::STATUS_CANCELLED,
+    ];
 
     protected $table = 'order'; 
 

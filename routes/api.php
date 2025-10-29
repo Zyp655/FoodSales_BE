@@ -14,7 +14,6 @@ use App\Http\Controllers\SellerProductController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
-use App\Http\Controllers\SellerOrderController;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -47,8 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/seller/info', [AuthController::class, 'updateSellerInfo']);
 
     Route::put('/user/address', [AuthController::class, 'updateAddress']);
-    Route::put('/user/contact', [AuthController::class, 'updateContact']); 
-    Route::post('/user/password', [AuthController::class, 'changePassword']); 
+    Route::put('/user/contact', [AuthController::class, 'updateContact']);
+    Route::post('/user/password', [AuthController::class, 'changePassword']);
 
 
     Route::prefix('cart')->group(function () {
@@ -60,8 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('order')->group(function () {
         Route::post('create', [OrderController::class, 'createOrder']);
-        Route::get('user', [OrderController::class, 'getOrdersByUser']);
-        Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']);
+        Route::get('user', action: [OrderController::class, 'getOrdersByUser']);
+        Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']); 
     });
 
     Route::prefix('transaction')->group(function () {
@@ -77,11 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('seller/orders')->group(function () {
-        Route::get('/', [SellerOrderController::class, 'index']);
-        Route::put('{id}/status', [SellerOrderController::class, 'updateStatus']);
+        Route::get('/', [OrderController::class, 'getOrdersBySeller']); 
+        Route::put('{id}/status', [OrderController::class, 'updateSellerOrderStatus']); 
     });
 
     Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
+        Route::get('orders', [AdminController::class, 'listAllOrders']);
         Route::get('sellers', [AdminController::class, 'listAllSellers']);
         Route::put('sellers/{id}/status', [AdminController::class, 'updateSellerStatus']);
         Route::get('users', [AdminController::class, 'listAllUsers']);
@@ -94,5 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {
         Route::get('orders', [DeliveryController::class, 'getAssignedOrders']);
         Route::put('orders/{id}/status', [DeliveryController::class, 'updateDeliveryStatus']);
+        
+        Route::get('available-orders', [DeliveryController::class, 'getAvailableOrders']);
+        Route::post('orders/{id}/accept', [DeliveryController::class, 'acceptOrder']);
     });
 });

@@ -6,34 +6,37 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class DeliveryController extends Controller
 {
     
     const DELIVERY_STATUSES = [
-        'Picking Up',
-        'In Transit', 
-        'Delivered',  
-        'Delivery Failed', 
+        Order::STATUS_PICKING_UP,
+        Order::STATUS_IN_TRANSIT,
+        Order::STATUS_DELIVERED,
+        Order::STATUS_CANCELLED,
     ];
 
     public function getAssignedOrders(Request $request)
     {
         $driverId = $request->user()->id;
-        
+
         $orders = Order::where('delivery_person_id', $driverId)
-            ->with('user:id,name,address')
+            ->whereIn('status', [Order::STATUS_PICKING_UP, Order::STATUS_IN_TRANSIT]) 
+            ->with(['user:id,name,address', 'seller:id,name,address']) 
             ->orderBy('created_at', 'desc')
             ->get();
-            
-        return response()->json(['success' => 1, 'data' => $orders]);
+
+        return response()->json(['success' => 1, 'orders' => $orders]); 
     }
 
-    
     public function updateDeliveryStatus(Request $request, $orderId)
     {
         $driverId = $request->user()->id;
-        
+
         $validator = Validator::make($request->all(), [
             'status' => 'required|string|in:' . implode(',', self::DELIVERY_STATUSES),
         ]);
@@ -43,24 +46,71 @@ class DeliveryController extends Controller
         }
 
         $order = Order::where('id', $orderId)
-                      ->where('delivery_person_id', $driverId)
-                      ->first();
-        
+            ->where('delivery_person_id', $driverId)
+            ->first();
+
         if (!$order) {
             return response()->json(['success' => 0, 'message' => 'Order not found or not assigned to you.'], 404);
         }
-        
+
         $oldStatus = $order->status;
         $newStatus = $request->status;
-        
+
+        if ($oldStatus == Order::STATUS_DELIVERED || $oldStatus == Order::STATUS_CANCELLED) {
+            return response()->json(['success' => 0, 'message' => "Cannot update status. Order is already {$oldStatus}."], 400);
+        }
+
         $order->status = $newStatus;
         $order->save();
 
         return response()->json([
-            'success' => 1, 
+            'success' => 1,
             'message' => "Order delivery status updated from {$oldStatus} to {$newStatus}.",
-            'order_id' => $order->id,
-            'new_status' => $newStatus
+            'order' => $order
         ], 200);
+    }
+
+    public function getAvailableOrders(Request $request)
+    {
+        $orders = Order::where('status', Order::STATUS_READY_FOR_PICKUP) 
+            ->whereNull('delivery_person_id') 
+            ->with(['user:id,name,address', 'seller:id,name,address']) 
+            ->orderBy('created_at', 'asc') 
+            ->get();
+
+        return response()->json(['success' => 1, 'orders' => $orders]);
+    }
+
+    public function acceptOrder(Request $request, $orderId)
+    {
+        $driverId = Auth::id();
+
+        try {
+            return DB::transaction(function () use ($orderId, $driverId) {
+                $order = Order::where('id', $orderId)
+                    ->where('status', Order::STATUS_READY_FOR_PICKUP)
+                    ->whereNull('delivery_person_id')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$order) {
+                    return response()->json(['success' => 0, 'message' => 'Order is no longer available or was picked up by someone else.'], 409); 
+                }
+
+                $order->delivery_person_id = $driverId;
+                $order->status = Order::STATUS_PICKING_UP; 
+                $order->save();
+                
+                $order->load(['user:id,name,address', 'seller:id,name,address']);
+
+                return response()->json([
+                    'success' => 1,
+                    'message' => 'Order accepted successfully and status set to Picking Up.',
+                    'order' => $order
+                ], 200);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['success' => 0, 'message' => 'Failed to accept order. Transaction error.', 'error' => $e->getMessage()], 500);
+        }
     }
 }
