@@ -39,7 +39,11 @@ Route::prefix('product')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
+    // Route User: Gửi đơn đăng ký giao hàng
     Route::post('/user/request-delivery', [DeliveryTicketController::class, 'createTicket']);
+    // Route User: Lấy trạng thái đơn đăng ký (Mới thêm)
+    Route::get('/delivery/ticket/status', [DeliveryTicketController::class, 'getTicketStatus']);
+    
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -81,8 +85,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [OrderController::class, 'getOrdersBySeller']); 
         Route::put('{id}/status', [OrderController::class, 'updateSellerOrderStatus']); 
     });
-
+    
     Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
+        Route::get('delivery-tickets', [DeliveryTicketController::class, 'getTickets']);
+        Route::post('delivery-tickets/{ticketId}/status', [DeliveryTicketController::class, 'updateTicketStatus']);
+        
         Route::get('orders', [AdminController::class, 'listAllOrders']);
         Route::get('sellers', [AdminController::class, 'listAllSellers']);
         Route::put('sellers/{id}/status', [AdminController::class, 'updateSellerStatus']);

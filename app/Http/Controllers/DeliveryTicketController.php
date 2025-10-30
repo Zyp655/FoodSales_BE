@@ -62,4 +62,87 @@ class DeliveryTicketController extends Controller
             return response()->json(['success' => 0, 'message' => 'Failed to submit application.', 'error' => $e->getMessage()], 500);
         }
     }
+    
+    public function getTicketStatus(Request $request)
+    {
+
+        dd('TESTING: Đã vào hàm getTickets');
+        $user = Auth::user();
+
+        if ($user->role === 'delivery') {
+            return response()->json(['success' => 1, 'status' => 'approved']);
+        }
+        
+        $ticket = DeliveryTicket::where('user_id', $user->id)
+                                ->orderBy('created_at', 'desc')
+                                ->first();
+
+        if ($ticket) {
+            return response()->json(['success' => 1, 'status' => $ticket->status]);
+        }
+        
+        return response()->json(['success' => 1, 'status' => null]);
+    }
+
+    public function getTickets(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['success' => 0, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $status = $request->query('status', 'pending');
+
+        $tickets = DeliveryTicket::with('user:id,name,email')
+                                 ->where('status', $status)
+                                 ->orderBy('created_at', 'desc')
+                                 ->paginate(15); 
+
+        return response()->json(['success' => 1, 'tickets' => $tickets]);
+    }
+
+    public function updateTicketStatus(Request $request, $ticketId)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['success' => 0, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:approved,rejected',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 0, 'message' => 'Invalid status value provided.'], 422);
+        }
+
+        $ticket = DeliveryTicket::find($ticketId);
+
+        if (!$ticket) {
+            return response()->json(['success' => 0, 'message' => 'Ticket not found.'], 404);
+        }
+        
+        if ($ticket->status !== 'pending') {
+             return response()->json(['success' => 0, 'message' => 'Ticket already processed.'], 409);
+        }
+
+        $newStatus = $request->status;
+
+        $ticket->status = $newStatus;
+        $ticket->save();
+
+        if ($newStatus === 'approved') {
+            $user = $ticket->user;
+            if ($user) {
+                $user->role = 'delivery';
+                $user->save();
+            }
+        }
+        
+        $ticket->load('user:id,name,email');
+
+        return response()->json([
+            'success' => 1,
+            'message' => "Ticket #{$ticketId} status updated to {$newStatus}.",
+            'ticket' => $ticket
+        ], 200);
+    }
 }
