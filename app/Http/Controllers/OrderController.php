@@ -82,7 +82,7 @@ class OrderController extends Controller
 
             if (empty($orderItemsData)) {
                     DB::rollBack();
-                    return response()->json(['success' => 0, 'message' => 'Failed to process any cart item. Products may have been removed or are missing price_per_kg.', 'debug' => $cartItems->pluck('id')], 500);
+                    return response()->json(['success' => 0, 'message' => 'Failed to process any cart item.', 'debug' => $cartItems->pluck('id')], 500);
             }
 
             OrderItem::insert($orderItemsData);
@@ -101,8 +101,37 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => 0, 'message' => 'Failed to create order. Transaction error.', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => 0, 'message' => 'Failed to create order.', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function fixMissingCommissions(Request $request)
+    {
+        $ordersToFix = Order::where('status', Order::STATUS_READY_FOR_PICKUP)
+                            ->whereNull('commission_amount')
+                            ->get();
+
+        if ($ordersToFix->isEmpty()) {
+            return response()->json(['message' => 'No orders needed fixing.']);
+        }
+
+        $count = 0;
+        foreach ($ordersToFix as $order) {
+            $percent_commission_rate = 0.05;
+            $km_commission_rate = 5000;
+            $simulated_distance = rand(20, 150) / 10.0;
+            $commission_from_total = $order->total_amount * $percent_commission_rate;
+            $commission_from_distance = $simulated_distance * $km_commission_rate;
+            
+            $order->distance_km = $simulated_distance;
+            $order->commission_amount = $commission_from_total + $commission_from_distance;
+            $order->save();
+            $count++;
+        }
+
+        return response()->json([
+            'message' => 'Successfully fixed ' . $count . ' old orders.'
+        ]);
     }
     
     public function getOrdersByUser(Request $request)
@@ -110,14 +139,14 @@ class OrderController extends Controller
         $userId = $request->user()->id; 
 
         $ordersList = Order::where('user_id', $userId)
-                             ->with([
-                                'seller:id,name',
-                                'deliveryPerson:id,name,email,role',
-                                'items', 
-                                'items.product' 
-                                 ])
-                             ->orderBy('created_at', 'desc')
-                             ->get();
+                                ->with([
+                                    'seller:id,name',
+                                    'deliveryPerson:id,name,email,role',
+                                    'items', 
+                                    'items.product' 
+                                    ])
+                                ->orderBy('created_at', 'desc')
+                                ->get();
 
         if ($ordersList->isEmpty()) {
             return response()->json(['success' => 1, 'message' => 'No orders found for this user.', 'orders' => []]);
@@ -184,8 +213,8 @@ class OrderController extends Controller
         $newStatus = $request->status;
         
         $order = Order::where('id', $orderId)
-                      ->where('seller_id', $sellerId)
-                      ->first();
+                        ->where('seller_id', $sellerId)
+                        ->first();
 
         if (!$order) {
             return response()->json(['success' => 0, 'message' => 'Order not found or access denied.'], 404);
@@ -194,9 +223,20 @@ class OrderController extends Controller
         $oldStatus = $order->status;
         
         if (!in_array($oldStatus, [Order::STATUS_PENDING, Order::STATUS_PROCESSING])) {
-             return response()->json(['success' => 0, 'message' => "Cannot update status from {$oldStatus}. Order must be Pending or Processing to mark it as Ready."], 400);
+             return response()->json(['success' => 0, 'message' => "Cannot update status from {$oldStatus}. Order must be Pending or Processing."], 400);
         }
         
+        if ($newStatus == Order::STATUS_READY_FOR_PICKUP && is_null($order->commission_amount)) {
+            $percent_commission_rate = 0.05;
+            $km_commission_rate = 5000;
+            $simulated_distance = rand(20, 150) / 10.0;
+            $commission_from_total = $order->total_amount * $percent_commission_rate;
+            $commission_from_distance = $simulated_distance * $km_commission_rate;
+            
+            $order->distance_km = $simulated_distance;
+            $order->commission_amount = $commission_from_total + $commission_from_distance;
+        }
+
         $order->status = $newStatus;
         $order->save();
 
@@ -214,14 +254,14 @@ class OrderController extends Controller
         $sellerId = Auth::id();
 
         $ordersList = Order::where('seller_id', $sellerId)
-                             ->with([
-                                'user:id,name', 
-                                'deliveryPerson:id,name',
-                                'items',
-                                'items.product'
-                             ])
-                             ->orderBy('created_at', 'desc')
-                             ->get();
+                                ->with([
+                                    'user:id,name', 
+                                    'deliveryPerson:id,name',
+                                    'items',
+                                    'items.product'
+                                ])
+                                ->orderBy('created_at', 'desc')
+                                ->get();
 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
     }
@@ -232,14 +272,14 @@ class OrderController extends Controller
 
         try {
             $order = Order::where('id', $orderId)
-                          ->where('user_id', $userId) 
-                          ->with([ 
-                              'seller:id,name,image,address,phone',
-                              'deliveryPerson:id,name,phone',
-                              'items',
-                              'items.product'
-                          ])
-                          ->firstOrFail(); 
+                        ->where('user_id', $userId) 
+                        ->with([ 
+                            'seller:id,name,image,address,phone',
+                            'deliveryPerson:id,name,phone',
+                            'items',
+                            'items.product'
+                        ])
+                        ->firstOrFail(); 
 
             return response()->json(['success' => 1, 'order' => $order], 200);
 
@@ -249,4 +289,4 @@ class OrderController extends Controller
             return response()->json(['success' => 0, 'message' => 'Server error.', 'error' => $e->getMessage()], 500);
         }
     }
-} 
+}

@@ -103,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('categories', [AdminController::class, 'adminCreateCategory']);
         Route::put('categories/{id}', [AdminController::class, 'adminUpdateCategory']);
         Route::delete('categories/{id}', [AdminController::class, 'adminDeleteCategory']);
+        Route::get('fix-old-orders', [OrderController::class, 'fixMissingCommissions']);
     });
 
     Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {

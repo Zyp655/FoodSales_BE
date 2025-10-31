@@ -178,10 +178,11 @@ class AuthController extends Controller
         }
     }
 
-    public function updateContact(Request $request)
+    public function updateProfile(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'nullable|numeric|digits:10',
+            'name' => 'sometimes|required|string|max:255',
+            'phone' => 'sometimes|required|numeric|digits:10',
         ]);
 
         if ($validator->fails()) {
@@ -195,7 +196,13 @@ class AuthController extends Controller
         }
 
         try {
-            $user->phone = $request->phone;
+            if ($request->has('name')) {
+                $user->name = $request->name;
+            }
+            if ($request->has('phone')) {
+                $user->phone = $request->phone;
+            }
+            
             $user->save();
 
             $userData = $user->toArray();
@@ -203,10 +210,10 @@ class AuthController extends Controller
                 $userData['role'] = 'seller';
             }
 
-            return response()->json(['success' => 1, 'message' => 'Contact info updated successfully.', 'user' => $userData], 200);
+            return response()->json(['success' => 1, 'message' => 'Profile updated successfully.', 'user' => $userData], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['success' => 0, 'message' => 'Failed to update contact info.', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => 0, 'message' => 'Failed to update profile.', 'error' => $e->getMessage()], 500);
         }
     }
 
