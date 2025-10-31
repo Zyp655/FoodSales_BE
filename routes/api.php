@@ -37,11 +37,8 @@ Route::prefix('product')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
-
     Route::post('auth/logout', [AuthController::class, 'logout']);
-    // Route User: Gửi đơn đăng ký giao hàng
     Route::post('/user/request-delivery', [DeliveryTicketController::class, 'createTicket']);
-    // Route User: Lấy trạng thái đơn đăng ký (Mới thêm)
     Route::get('/delivery/ticket/status', [DeliveryTicketController::class, 'getTicketStatus']);
     
     Route::get('/user', function (Request $request) {
@@ -65,7 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('order')->group(function () {
         Route::post('create', [OrderController::class, 'createOrder']);
         Route::get('user', action: [OrderController::class, 'getOrdersByUser']);
-        Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']); 
+        Route::put('{id}/status', [OrderController::class, 'updateOrderStatus']);
         Route::get('detail/{id}', [OrderController::class, 'getOrderDetails']);
     });
 
@@ -82,8 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('seller/orders')->group(function () {
-        Route::get('/', [OrderController::class, 'getOrdersBySeller']); 
-        Route::put('{id}/status', [OrderController::class, 'updateSellerOrderStatus']); 
+        Route::get('/', [OrderController::class, 'getOrdersBySeller']);
+        Route::put('{id}/status', [OrderController::class, 'updateSellerOrderStatus']);
     });
     
     Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
@@ -98,6 +95,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('products', [AdminController::class, 'listAllProducts']);
         Route::delete('products/{id}', [AdminController::class, 'destroyProduct']);
         Route::put('orders/{id}/assign-driver', [AdminController::class, 'assignDriver']);
+        Route::get('accounts', [AdminController::class, 'getAllAccounts']);
+        Route::delete('users/{id}', [AdminController::class, 'deleteUser']);
+        Route::delete('sellers/{id}', [AdminController::class, 'deleteSeller']);
+
+        Route::get('categories', [AdminController::class, 'adminListCategories']);
+        Route::post('categories', [AdminController::class, 'adminCreateCategory']);
+        Route::put('categories/{id}', [AdminController::class, 'adminUpdateCategory']);
+        Route::delete('categories/{id}', [AdminController::class, 'adminDeleteCategory']);
     });
 
     Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {
