@@ -162,7 +162,7 @@ class AdminController extends Controller
                 'role' => $user->role,
                 'status' => null,
             ];
-        });
+        })->all();
 
         $sellers = $sellersQuery->get()->map(function ($seller) {
             return [
@@ -174,11 +174,13 @@ class AdminController extends Controller
                 'role' => $seller->role,
                 'status' => null,
             ];
-        });
+        })->all();
 
-        $allAccounts = $users->merge($sellers)->sortBy('name')->values();
+        $allAccounts = array_merge($users, $sellers);
+        
+        $sortedAccounts = collect($allAccounts)->sortBy('name')->values();
 
-        return response()->json(['success' => 1, 'data' => $allAccounts]);
+        return response()->json(['success' => 1, 'data' => $sortedAccounts]);
     }
 
     public function deleteUser($id)

@@ -48,7 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/seller/info', [AuthController::class, 'updateSellerInfo']);
 
     Route::put('/user/address', [AuthController::class, 'updateAddress']);
-    Route::put('/user/contact', [AuthController::class, 'updateContact']);
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
 
 
@@ -106,9 +106,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {
-        Route::get('orders', [DeliveryController::class, 'getAssignedOrders']);
+        Route::get('stats', [DeliveryController::class, 'getDeliveryStats']);
+        Route::get('assigned-orders', [DeliveryController::class, 'getAssignedOrders']);
         Route::put('orders/{id}/status', [DeliveryController::class, 'updateDeliveryStatus']);
-        
         Route::get('available-orders', [DeliveryController::class, 'getAvailableOrders']);
         Route::post('orders/{id}/accept', [DeliveryController::class, 'acceptOrder']);
     });

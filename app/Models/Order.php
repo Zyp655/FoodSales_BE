@@ -9,7 +9,6 @@ class Order extends Model
 {
     use HasFactory;
     
-
     const STATUS_PENDING = 'Pending'; 
     const STATUS_PROCESSING = 'Processing'; 
     const STATUS_READY_FOR_PICKUP = 'ReadyForPickup'; 
@@ -18,7 +17,6 @@ class Order extends Model
     const STATUS_DELIVERED = 'Delivered'; 
     const STATUS_CANCELLED = 'Cancelled'; 
     
-  
     const ALL_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_PROCESSING,
@@ -38,6 +36,8 @@ class Order extends Model
         'total_amount',
         'status', 
         'delivery_address',
+        'commission_amount',
+        'distance_km', 
     ];
     
     protected $casts = [
@@ -45,6 +45,8 @@ class Order extends Model
         'seller_id' => 'integer',
         'delivery_person_id' => 'integer',
         'total_amount' => 'float', 
+        'commission_amount' => 'float', 
+        'distance_km' => 'float', 
     ];
 
     public function user()
