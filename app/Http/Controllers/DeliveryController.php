@@ -21,6 +21,9 @@ class DeliveryController extends Controller
 
     public function getAvailableOrders(Request $request)
     {
+        $percent_commission_rate = 0.05;
+        $km_commission_rate = 5000;
+
         $orders = Order::where('status', Order::STATUS_READY_FOR_PICKUP)
             ->whereNull('delivery_person_id')
             ->with([
@@ -30,7 +33,19 @@ class DeliveryController extends Controller
                 'items.product' 
             ])
             ->orderBy('created_at', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($order) use ($percent_commission_rate, $km_commission_rate) {
+                
+                $simulated_distance = rand(20, 150) / 10.0; 
+
+                $commission_from_total = $order->total_amount * $percent_commission_rate;
+                $commission_from_distance = $simulated_distance * $km_commission_rate;
+                
+                $order->commission_amount = $commission_from_total + $commission_from_distance; 
+                $order->distance_km = $simulated_distance;
+                
+                return $order;
+            });
 
         return response()->json(['success' => 1, 'orders' => $orders]);
     }
@@ -51,8 +66,18 @@ class DeliveryController extends Controller
                     return response()->json(['success' => 0, 'message' => 'Order is no longer available.'], 409);
                 }
 
+                $percent_commission_rate = 0.05;
+                $km_commission_rate = 5000;
+                $simulated_distance = rand(20, 150) / 10.0;
+                $commission_from_total = $order->total_amount * $percent_commission_rate;
+                $commission_from_distance = $simulated_distance * $km_commission_rate;
+                
+                $total_commission = $commission_from_total + $commission_from_distance;
+
                 $order->delivery_person_id = $driverId;
                 $order->status = Order::STATUS_PICKING_UP;
+                $order->commission_amount = $total_commission;
+                $order->distance_km = $simulated_distance;
                 $order->save();
                 
                 $order->load(['user:id,name,address', 'seller:id,name,address']);
@@ -93,7 +118,12 @@ class DeliveryController extends Controller
 
         $orders = Order::where('delivery_person_id', $driverId)
             ->whereIn('status', [Order::STATUS_PICKING_UP, Order::STATUS_IN_TRANSIT]) 
-            ->with(['user:id,name,address', 'seller:id,name,address']) 
+            ->with([
+                'user:id,name,address', 
+                'seller:id,name,address',
+                'items',
+                'items.product' 
+            ]) 
             ->orderBy('created_at', 'desc')
             ->get();
 

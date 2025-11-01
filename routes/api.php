@@ -15,6 +15,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
 use App\Http\Controllers\DeliveryTicketController;
+use App\Http\Controllers\SellerOrderController; // <-- THÊM DÒNG NÀY
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -81,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('seller/orders')->group(function () {
         Route::get('/', [OrderController::class, 'getOrdersBySeller']);
         Route::put('{id}/status', [OrderController::class, 'updateSellerOrderStatus']);
+        Route::get('analytics', [SellerOrderController::class, 'getAnalytics']);
     });
     
     Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
