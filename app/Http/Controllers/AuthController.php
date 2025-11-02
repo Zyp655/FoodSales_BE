@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
+use App\Jobs\SendWelcomeEmail;
+use Illuminate\Support\Facades\Cache;
 
 class AuthController extends Controller
 {
@@ -85,6 +87,8 @@ class AuthController extends Controller
                 'address' => $request->address,
             ]);
 
+            SendWelcomeEmail::dispatch($user->email, $user->name);
+
             return response()->json(['success' => 1, 'message' => 'User registered!', 'user' => $user->makeHidden(['password'])], 201);
         } catch (\Exception $e) {
             return response()->json(['success' => 0, 'message' => 'Internal Server Error during registration.', 'error' => $e->getMessage()], 500);
@@ -130,6 +134,8 @@ class AuthController extends Controller
                 'description' => $request->description,
                 'image' => $imagePath,
             ]);
+            
+            SendWelcomeEmail::dispatch($seller->email, $seller->name);
 
             return response()->json(['success' => 1, 'message' => 'Seller registered!', 'seller' => $seller->makeHidden(['password'])], 201);
         } catch (\Exception $e) {
@@ -286,6 +292,8 @@ class AuthController extends Controller
             $user->update($dataToUpdate);
 
             $user->refresh();
+            
+            Cache::forget('seller_analytics_' . $user->id);
 
             $userData = $user->toArray();
             $userData['role'] = 'seller'; 

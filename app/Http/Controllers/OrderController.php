@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Jobs\ProcessNewOrder;
+use Illuminate\Support\Facades\Cache;
+
 class OrderController extends Controller
 {
     public function createOrder(Request $request)
@@ -90,6 +93,8 @@ class OrderController extends Controller
             Cart::whereIn('id', $cartItemIdsToDelete)->delete();
 
             DB::commit();
+            
+            ProcessNewOrder::dispatch($order);
             
             $order->load(['user:id,name', 'seller:id,name', 'items.product']);
             
@@ -239,6 +244,8 @@ class OrderController extends Controller
 
         $order->status = $newStatus;
         $order->save();
+        
+        Cache::forget('seller_analytics_' . $sellerId);
 
         $order->load(['user:id,name', 'seller:id,name', 'deliveryPerson:id,name', 'items.product']);
 
