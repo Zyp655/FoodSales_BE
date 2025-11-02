@@ -20,7 +20,6 @@ class ChatController extends Controller
 
         $sender = Auth::user();
         $message = $request->message;
-
         $receiverType = $request->receiver_type;
         $receiverId = $request->receiver_id;
         
@@ -33,13 +32,13 @@ class ChatController extends Controller
             $senderType = 'delivery';
         }
 
-        $participants = [
-            ['type' => $senderType, 'id' => $sender->id],
-            ['type' => $receiverType, 'id' => $receiverId],
-        ];
+        $senderIdentifier = "{$senderType}-{$sender->id}";
+        $receiverIdentifier = "{$receiverType}-{$receiverId}";
 
+        $participants = [$senderIdentifier, $receiverIdentifier];
         sort($participants); 
-        $channelName = 'private-chat.' . $participants[0]['type'] . '-' . $participants[0]['id'] . '.' . $participants[1]['type'] . '-' . $participants[1]['id'];
+        
+        $channelName = 'private-chat.' . $participants[0] . '.' . $participants[1];
 
         broadcast(new NewChatMessage($channelName, $senderType, $sender->id, $message))->toOthers();
 
