@@ -56,4 +56,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
+
+    public function broadcastAs(): string
+    {
+        $type = $this->role;
+        return "{$type}-{$this->id}";
+    }
 }

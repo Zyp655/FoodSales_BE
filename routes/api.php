@@ -8,14 +8,14 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SellerProductController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
 use App\Http\Controllers\DeliveryTicketController;
-use App\Http\Controllers\SellerOrderController; // <-- THÊM DÒNG NÀY
+use App\Http\Controllers\SellerOrderController;
+use App\Http\Controllers\ChatController; 
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -27,8 +27,6 @@ Route::prefix('gen')->group(function () {
     Route::get('search', [ProductController::class, 'combinedSearch']);
     Route::get('products/search', [ProductController::class, 'searchProducts']);
     Route::get('sellers', [SellerProductController::class, 'listSellers']);
-    Route::get('distance', [UtilityController::class, 'getDistance']);
-    Route::post('interaction/increment', [UtilityController::class, 'incrementInteraction']);
     Route::get('categories', [ProductController::class, 'listCategories']);
 });
 
@@ -115,4 +113,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('available-orders', [DeliveryController::class, 'getAvailableOrders']);
         Route::post('orders/{id}/accept', [DeliveryController::class, 'acceptOrder']);
     });
+    
+    Route::post('chat/send', [ChatController::class, 'sendMessage']);
 });

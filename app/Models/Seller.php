@@ -27,7 +27,7 @@ class Seller extends Authenticatable
         'password',
     ];
 
-   
+    
     public function products()
     {
         return $this->hasMany(Product::class);
@@ -37,5 +37,11 @@ class Seller extends Authenticatable
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+
+    public function broadcastAs(): string
+    {
+        return "seller-{$this->id}";
     }
 }

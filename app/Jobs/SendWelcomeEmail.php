@@ -7,8 +7,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
-use App\Models\User; 
+use Illuminate\Support\Facades\Mail; 
+use App\Mail\WelcomeEmail; 
 
 class SendWelcomeEmail implements ShouldQueue
 {
@@ -25,6 +25,6 @@ class SendWelcomeEmail implements ShouldQueue
 
     public function handle(): void
     {
-        \Log::info("QUEUE JOB: Gửi email chào mừng tới: " . $this->userName);
+        Mail::to($this->userEmail)->send(new WelcomeEmail($this->userName));
     }
 }
