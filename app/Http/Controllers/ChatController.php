@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Events\NewChatMessage;
 use App\Models\User;
 use App\Models\Seller;
+use App\Models\Conversation; 
+use App\Models\Message;     
 
 class ChatController extends Controller
 {
@@ -19,7 +21,7 @@ class ChatController extends Controller
         ]);
 
         $sender = Auth::user();
-        $message = $request->message;
+        $messageText = $request->message;
         $receiverType = $request->receiver_type;
         $receiverId = $request->receiver_id;
         
@@ -40,7 +42,17 @@ class ChatController extends Controller
         
         $channelName = 'private-chat.' . $participants[0] . '.' . $participants[1];
 
-        broadcast(new NewChatMessage($channelName, $senderType, $sender->id, $message))->toOthers();
+        $conversation = Conversation::firstOrCreate(
+            ['channel_name' => $channelName]
+        );
+
+        $conversation->messages()->create([
+            'sender_id' => $sender->id,
+            'sender_type' => $senderType,
+            'body' => $messageText, 
+        ]);
+
+        broadcast(new NewChatMessage($channelName, $senderType, $sender->id, $messageText))->toOthers();
 
         return response()->json([
             'success' => 1,

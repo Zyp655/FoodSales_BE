@@ -16,6 +16,7 @@ use App\Http\Middleware\DeliveryMiddleware;
 use App\Http\Controllers\DeliveryTicketController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\ChatController; 
+use Illuminate\Support\Facades\Broadcast;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -39,7 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('/user/request-delivery', [DeliveryTicketController::class, 'createTicket']);
     Route::get('/delivery/ticket/status', [DeliveryTicketController::class, 'getTicketStatus']);
-    
+    Broadcast::routes();
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -104,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('categories/{id}', [AdminController::class, 'adminUpdateCategory']);
         Route::delete('categories/{id}', [AdminController::class, 'adminDeleteCategory']);
         Route::get('fix-old-orders', [OrderController::class, 'fixMissingCommissions']);
+
+        Route::get('conversations', [AdminController::class, 'getConversations']);
     });
 
     Route::middleware(DeliveryMiddleware::class)->prefix('delivery')->group(function () {

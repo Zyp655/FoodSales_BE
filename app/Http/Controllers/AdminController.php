@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Models\Conversation;
+use App\Models\Message;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -271,4 +274,15 @@ class AdminController extends Controller
             return response()->json(['success' => 0, 'message' => 'Category not found.'], 404);
         }
     }
+    
+    public function getConversations(Request $request)
+    {
+        $conversations = Conversation::with('lastMessage')
+            ->has('lastMessage') 
+            ->orderBy('updated_at', 'desc') 
+            ->get();
+
+        return response()->json(['success' => 1, 'data' => $conversations]);
+    }
 }
+
