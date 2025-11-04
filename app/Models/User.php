@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens; 
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class User extends Authenticatable
 {
@@ -61,5 +62,13 @@ class User extends Authenticatable
     {
         $type = $this->role;
         return "{$type}-{$this->id}";
+    }
+    public function conversations(): MorphToMany
+    {
+        return $this->morphToMany(
+            Conversation::class,      
+            'participant',            
+            'chat_participants'        
+        );
     }
 }
