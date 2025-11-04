@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
@@ -15,8 +14,11 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\DeliveryMiddleware;
 use App\Http\Controllers\DeliveryTicketController;
 use App\Http\Controllers\SellerOrderController;
-use App\Http\Controllers\ChatController; 
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ConversationController;
+
+Broadcast::routes(['middleware' => ['api', 'auth:sanctum']]);
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'unifiedLogin']);
@@ -40,17 +42,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('/user/request-delivery', [DeliveryTicketController::class, 'createTicket']);
     Route::get('/delivery/ticket/status', [DeliveryTicketController::class, 'getTicketStatus']);
-    Broadcast::routes();
+
+    Route::apiResource('conversations', ConversationController::class)->only(['index', 'store']);
+    Route::apiResource('conversations.messages', MessageController::class)->only(['index', 'store']);
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
     Route::post('/seller/info', [AuthController::class, 'updateSellerInfo']);
-
     Route::put('/user/address', [AuthController::class, 'updateAddress']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
-
 
     Route::prefix('cart')->group(function () {
         Route::post('add', [CartController::class, 'addToCart']);
@@ -99,13 +102,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('accounts', [AdminController::class, 'getAllAccounts']);
         Route::delete('users/{id}', [AdminController::class, 'deleteUser']);
         Route::delete('sellers/{id}', [AdminController::class, 'deleteSeller']);
-
         Route::get('categories', [AdminController::class, 'adminListCategories']);
         Route::post('categories', [AdminController::class, 'adminCreateCategory']);
         Route::put('categories/{id}', [AdminController::class, 'adminUpdateCategory']);
         Route::delete('categories/{id}', [AdminController::class, 'adminDeleteCategory']);
         Route::get('fix-old-orders', [OrderController::class, 'fixMissingCommissions']);
-
         Route::get('conversations', [AdminController::class, 'getConversations']);
     });
 
@@ -117,5 +118,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('orders/{id}/accept', [DeliveryController::class, 'acceptOrder']);
     });
     
-    Route::post('chat/send', [ChatController::class, 'sendMessage']);
 });

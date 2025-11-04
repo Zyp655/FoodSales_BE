@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Events;
+namespace App\Events; 
 
+use App\Models\Message; 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -14,26 +15,27 @@ class NewChatMessage implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $channelName;
-    public $senderType;
-    public $senderId;
-    public $message;
-
-    public function __construct(string $channelName, string $senderType, int $senderId, string $message)
+    public function __construct(private Message $message)
     {
-        $this->channelName = $channelName;
-        $this->senderType = $senderType;
-        $this->senderId = $senderId;
-        $this->message = $message;
+        $this->message->load('sender'); 
     }
 
+    
     public function broadcastOn(): array
     {
-        return [new PrivateChannel($this->channelName)];
+        return [new PrivateChannel('chat.' . $this->message->conversation_id)];
     }
 
+    
     public function broadcastAs(): string
     {
         return 'new-message';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'message' => $this->message,
+        ];
     }
 }

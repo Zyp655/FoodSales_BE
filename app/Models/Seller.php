@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+
 
 class Seller extends Authenticatable
 {
@@ -43,5 +45,13 @@ class Seller extends Authenticatable
     public function broadcastAs(): string
     {
         return "seller-{$this->id}";
+    }
+    public function conversations(): MorphToMany
+    {
+        return $this->morphToMany(
+            Conversation::class,
+            'participant',
+            'chat_participants'
+        );
     }
 }
