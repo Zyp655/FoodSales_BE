@@ -89,7 +89,6 @@ class ConversationController extends Controller
             elseif ($p1_type === 'seller' && $p2_type === 'delivery') {
                 $query->where('seller_id', $p1_id)->where('delivery_person_id', $p2_id);
             }
-            
             else {
                 $query->whereRaw('1=0'); 
             }
@@ -102,12 +101,10 @@ class ConversationController extends Controller
         if (!$canChat) {
             return response()->json(['message' => 'Not authorized to start this chat.'], 403);
         }
+
+        $senderConversations = $sender->conversations()->pluck('conversations.id');
+        $receiverConversations = $receiver->conversations()->pluck('conversations.id');
        
-
-
-        
-        $senderConversations = $sender->conversations()->pluck('id');
-        $receiverConversations = $receiver->conversations()->pluck('id');
 
         $existingConversationId = $senderConversations->intersect($receiverConversations)->first();
 
