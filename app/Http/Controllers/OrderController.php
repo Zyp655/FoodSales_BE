@@ -96,7 +96,7 @@ class OrderController extends Controller
             
             ProcessNewOrder::dispatch($order);
             
-            $order->load(['user:id,name', 'seller:id,name', 'items.product']);
+            $order->load(['user:id,name,address', 'seller:id,name', 'items.product']);
             
             return response()->json([
                 'success' => 1, 
@@ -144,14 +144,15 @@ class OrderController extends Controller
         $userId = $request->user()->id; 
 
         $ordersList = Order::where('user_id', $userId)
-                                ->with([
-                                    'seller:id,name',
-                                    'deliveryPerson:id,name,email,role',
-                                    'items', 
-                                    'items.product' 
-                                    ])
-                                ->orderBy('created_at', 'desc')
-                                ->get();
+                             ->with([
+                                'user:id,name,address',
+                                'seller:id,name',
+                                'deliveryPerson:id,name,email,role',
+                                'items', 
+                                'items.product' 
+                                ])
+                             ->orderBy('created_at', 'desc')
+                             ->get();
 
         if ($ordersList->isEmpty()) {
             return response()->json(['success' => 1, 'message' => 'No orders found for this user.', 'orders' => []]);
@@ -190,7 +191,7 @@ class OrderController extends Controller
         $order->status = $newStatus;
         $order->save();
         
-        $order->load(['user:id,name', 'seller:id,name', 'deliveryPerson:id,name', 'items.product']);
+        $order->load(['user:id,name,address', 'seller:id,name', 'deliveryPerson:id,name', 'items.product']);
 
         return response()->json([
             'success' => 1, 
@@ -218,8 +219,8 @@ class OrderController extends Controller
         $newStatus = $request->status;
         
         $order = Order::where('id', $orderId)
-                        ->where('seller_id', $sellerId)
-                        ->first();
+                         ->where('seller_id', $sellerId)
+                         ->first();
 
         if (!$order) {
             return response()->json(['success' => 0, 'message' => 'Order not found or access denied.'], 404);
@@ -247,7 +248,7 @@ class OrderController extends Controller
         
         Cache::forget('seller_analytics_' . $sellerId);
 
-        $order->load(['user:id,name', 'seller:id,name', 'deliveryPerson:id,name', 'items.product']);
+        $order->load(['user:id,name,address', 'seller:id,name', 'deliveryPerson:id,name', 'items.product']);
 
         return response()->json([
             'success' => 1,
@@ -261,14 +262,14 @@ class OrderController extends Controller
         $sellerId = Auth::id();
 
         $ordersList = Order::where('seller_id', $sellerId)
-                                ->with([
-                                    'user:id,name', 
-                                    'deliveryPerson:id,name',
-                                    'items',
-                                    'items.product'
-                                ])
-                                ->orderBy('created_at', 'desc')
-                                ->get();
+                             ->with([
+                                 'user:id,name,address', 
+                                 'deliveryPerson:id,name',
+                                 'items',
+                                 'items.product'
+                             ])
+                             ->orderBy('created_at', 'desc')
+                             ->get();
 
         return response()->json(['success' => 1, 'orders' => $ordersList]);
     }
@@ -279,14 +280,15 @@ class OrderController extends Controller
 
         try {
             $order = Order::where('id', $orderId)
-                        ->where('user_id', $userId) 
-                        ->with([ 
-                            'seller:id,name,image,address,phone',
-                            'deliveryPerson:id,name,phone',
-                            'items',
-                            'items.product'
-                        ])
-                        ->firstOrFail(); 
+                             ->where('user_id', $userId) 
+                             ->with([ 
+                                 'user:id,name,address', 
+                                 'seller:id,name,image,address,phone',
+                                 'deliveryPerson:id,name,phone',
+                                 'items',
+                                 'items.product'
+                             ])
+                             ->firstOrFail(); 
 
             return response()->json(['success' => 1, 'order' => $order], 200);
 
